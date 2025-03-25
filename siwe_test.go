@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -95,7 +96,7 @@ func TestCreate(t *testing.T) {
 		nonce,
 		options,
 	)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, message.domain, domain, "domain should be %s", domain)
 	assert.Equal(t, message.address, address, "address should be %s", address)
@@ -116,7 +117,7 @@ func TestCreate(t *testing.T) {
 
 func TestCreateRequired(t *testing.T) {
 	message, err := InitMessage(domain, addressStr, uri, GenerateNonce(), map[string]any{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, message.domain, domain, "domain should be %s", domain)
 	assert.Equal(t, message.address, address, "address should be %s", address)
@@ -136,9 +137,8 @@ func TestCreateRequired(t *testing.T) {
 }
 
 func TestCreateEmpty(t *testing.T) {
-	var err error
 
-	_, err = InitMessage("", addressStr, uri, GenerateNonce(), map[string]any{})
+	_, err := InitMessage("", addressStr, uri, GenerateNonce(), map[string]any{})
 	assert.Error(t, err)
 
 	_, err = InitMessage(domain, "", uri, GenerateNonce(), map[string]any{})
@@ -155,19 +155,19 @@ func TestPrepareParse(t *testing.T) {
 	prepare := message.String()
 	parse, err := ParseMessage(prepare)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	compareMessage(t, message, parse)
 }
 
 func TestPrepareParseRequired(t *testing.T) {
 	message, err := InitMessage(domain, addressStr, uri, GenerateNonce(), map[string]any{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	prepare := message.String()
 	parse, err := ParseMessage(prepare)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	compareMessage(t, message, parse)
 }
@@ -182,7 +182,7 @@ func TestValidateEmpty(t *testing.T) {
 
 func createWallet(t *testing.T) (*ecdsa.PrivateKey, string) {
 	privateKey, err := crypto.GenerateKey()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	publicKey := privateKey.Public()
 	publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
@@ -197,13 +197,13 @@ func TestValidateNotBefore(t *testing.T) {
 	message, err := InitMessage(domain, address, uri, GenerateNonce(), map[string]any{
 		"notBefore": time.Now().UTC().Add(24 * time.Hour).Format(time.RFC3339),
 	})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	prepare := message.String()
 
 	hash := crypto.Keccak256Hash([]byte(prepare))
 	signature, err := crypto.Sign(hash.Bytes(), privateKey)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, err = message.Verify(hexutil.Encode(signature), nil, nil, nil)
 
@@ -218,13 +218,13 @@ func TestValidateExpirationTime(t *testing.T) {
 	message, err := InitMessage(domain, address, uri, GenerateNonce(), map[string]any{
 		"expirationTime": time.Now().UTC().Add(-24 * time.Hour).Format(time.RFC3339),
 	})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	prepare := message.String()
 
 	hash := crypto.Keccak256Hash([]byte(prepare))
 	signature, err := crypto.Sign(hash.Bytes(), privateKey)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, err = message.Verify(hexutil.Encode(signature), nil, nil, nil)
 
@@ -237,17 +237,17 @@ func TestValidate(t *testing.T) {
 	privateKey, address := createWallet(t)
 
 	message, err := InitMessage(domain, address, uri, nonce, options)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	hash := message.eip191Hash()
 	signature, err := crypto.Sign(hash.Bytes(), privateKey)
 	signature[64] += 27
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, err = message.Verify(hexutil.Encode(signature), nil, nil, nil)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestValidateTampered(t *testing.T) {
@@ -255,16 +255,15 @@ func TestValidateTampered(t *testing.T) {
 	_, otherAddress := createWallet(t)
 
 	message, err := InitMessage(domain, address, uri, nonce, options)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	hash := message.eip191Hash()
 	signature, err := crypto.Sign(hash.Bytes(), privateKey)
+	assert.NoError(t, err)
 	signature[64] += 27
 
-	assert.Nil(t, err)
-
 	message, err = InitMessage(domain, otherAddress, uri, nonce, options)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	_, err = message.Verify(hexutil.Encode(signature), nil, nil, nil)
 
 	if assert.Error(t, err) {
@@ -313,7 +312,7 @@ func parsingPositive(t *testing.T, cases map[string]any) {
 		}
 
 		constructed, err := ParseMessage(message)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, constructed.String(), message)
 	}
 }
@@ -358,8 +357,8 @@ func verificationNegative(t *testing.T, cases map[string]any) {
 
 		var timestamp *time.Time
 		if val, ok := data["time"]; ok {
-			parsed, err := time.Parse(ISO8601Layout, val.(string))
-			assert.Nil(t, err)
+			parsed, err := time.Parse(time.RFC3339, val.(string))
+			assert.NoError(t, err)
 			timestamp = &parsed
 		}
 
@@ -379,11 +378,11 @@ func verificationPositive(t *testing.T, cases map[string]any) {
 			data["nonce"].(string),
 			data,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		var timestamp *time.Time
 		if val, ok := data["time"]; ok {
-			parsed, err := time.Parse(ISO8601Layout, val.(string))
+			parsed, err := time.Parse(time.RFC3339, val.(string))
 			assert.NoError(t, err)
 			timestamp = &parsed
 		}

@@ -63,7 +63,7 @@ func (m *Message) GetIssuedAt() string {
 
 func (m *Message) getExpirationTime() *time.Time {
 	if !isEmpty(m.expirationTime) {
-		ret, err := time.Parse(ISO8601Layout, *m.expirationTime)
+		ret, err := time.Parse(time.RFC3339, *m.expirationTime)
 		if err != nil {
 			return nil
 		}
@@ -82,7 +82,7 @@ func (m *Message) GetExpirationTime() *string {
 
 func (m *Message) getNotBefore() *time.Time {
 	if !isEmpty(m.notBefore) {
-		ret, err := time.Parse(ISO8601Layout, *m.notBefore)
+		ret, err := time.Parse(time.RFC3339, *m.notBefore)
 		if err != nil {
 			return nil
 		}

@@ -79,13 +79,13 @@ func InitMessage(domain, address, uri, nonce string, options map[string]interfac
 
 	var chainId int
 	if val, ok := options["chainId"]; ok {
-		switch val.(type) {
+		switch typedVal := val.(type) {
 		case float64:
-			chainId = int(val.(float64))
+			chainId = int(typedVal)
 		case int:
-			chainId = val.(int)
+			chainId = typedVal
 		case string:
-			parsed, err := strconv.Atoi(val.(string))
+			parsed, err := strconv.Atoi(typedVal)
 			if err != nil {
 				return nil, &InvalidMessage{"Invalid format for field `chainId`, must be an integer"}
 			}
@@ -136,10 +136,8 @@ func InitMessage(domain, address, uri, nonce string, options map[string]interfac
 
 	var resources []url.URL
 	if val, ok := options["resources"]; ok {
-		switch val.(type) {
-		case []url.URL:
-			resources = val.([]url.URL)
-		default:
+		resources, ok = val.([]url.URL)
+		if !ok {
 			return nil, &InvalidMessage{"`resources` must be a []url.URL"}
 		}
 	}

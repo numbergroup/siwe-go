@@ -3,7 +3,7 @@ package siwe
 import (
 	"crypto/ecdsa"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"os"
 	"strconv"
@@ -51,7 +51,7 @@ func parsedResources() []url.URL {
 
 var resources = parsedResources()
 
-var options = map[string]interface{}{
+var options = map[string]any{
 	"statement":      statement,
 	"chainId":        chainId,
 	"issuedAt":       issuedAt,
@@ -115,7 +115,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreateRequired(t *testing.T) {
-	message, err := InitMessage(domain, addressStr, uri, GenerateNonce(), map[string]interface{}{})
+	message, err := InitMessage(domain, addressStr, uri, GenerateNonce(), map[string]any{})
 	assert.Nil(t, err)
 
 	assert.Equal(t, message.domain, domain, "domain should be %s", domain)
@@ -138,16 +138,16 @@ func TestCreateRequired(t *testing.T) {
 func TestCreateEmpty(t *testing.T) {
 	var err error
 
-	_, err = InitMessage("", addressStr, uri, GenerateNonce(), map[string]interface{}{})
+	_, err = InitMessage("", addressStr, uri, GenerateNonce(), map[string]any{})
 	assert.Error(t, err)
 
-	_, err = InitMessage(domain, "", uri, GenerateNonce(), map[string]interface{}{})
+	_, err = InitMessage(domain, "", uri, GenerateNonce(), map[string]any{})
 	assert.Error(t, err)
 
-	_, err = InitMessage(domain, addressStr, "", GenerateNonce(), map[string]interface{}{})
+	_, err = InitMessage(domain, addressStr, "", GenerateNonce(), map[string]any{})
 	assert.Error(t, err)
 
-	_, err = InitMessage(domain, addressStr, uri, "", map[string]interface{}{})
+	_, err = InitMessage(domain, addressStr, uri, "", map[string]any{})
 	assert.Error(t, err)
 }
 
@@ -161,7 +161,7 @@ func TestPrepareParse(t *testing.T) {
 }
 
 func TestPrepareParseRequired(t *testing.T) {
-	message, err := InitMessage(domain, addressStr, uri, GenerateNonce(), map[string]interface{}{})
+	message, err := InitMessage(domain, addressStr, uri, GenerateNonce(), map[string]any{})
 	assert.Nil(t, err)
 
 	prepare := message.String()
@@ -194,7 +194,7 @@ func createWallet(t *testing.T) (*ecdsa.PrivateKey, string) {
 func TestValidateNotBefore(t *testing.T) {
 	privateKey, address := createWallet(t)
 
-	message, err := InitMessage(domain, address, uri, GenerateNonce(), map[string]interface{}{
+	message, err := InitMessage(domain, address, uri, GenerateNonce(), map[string]any{
 		"notBefore": time.Now().UTC().Add(24 * time.Hour).Format(time.RFC3339),
 	})
 	assert.Nil(t, err)
@@ -215,7 +215,7 @@ func TestValidateNotBefore(t *testing.T) {
 func TestValidateExpirationTime(t *testing.T) {
 	privateKey, address := createWallet(t)
 
-	message, err := InitMessage(domain, address, uri, GenerateNonce(), map[string]interface{}{
+	message, err := InitMessage(domain, address, uri, GenerateNonce(), map[string]any{
 		"expirationTime": time.Now().UTC().Add(-24 * time.Hour).Format(time.RFC3339),
 	})
 	assert.Nil(t, err)
@@ -272,24 +272,24 @@ func TestValidateTampered(t *testing.T) {
 	}
 }
 
-func assertCase(t *testing.T, fields map[string]interface{}, parsed interface{}, key string) {
+func assertCase(t *testing.T, fields map[string]any, parsed any, key string) {
 	if field, ok := fields[key]; ok {
 		assert.Equal(t, field, parsed, "%s should be %s", key, field)
 	}
 }
 
-func parsingNegative(t *testing.T, cases map[string]interface{}) {
+func parsingNegative(t *testing.T, cases map[string]any) {
 	for name, message := range cases {
 		_, err := ParseMessage(message.(string))
 		assert.Error(t, err, name)
 	}
 }
 
-func parsingPositive(t *testing.T, cases map[string]interface{}) {
+func parsingPositive(t *testing.T, cases map[string]any) {
 	for name, v := range cases {
-		data := v.(map[string]interface{})
+		data := v.(map[string]any)
 		message := data["message"].(string)
-		fields := data["fields"].(map[string]interface{})
+		fields := data["fields"].(map[string]any)
 		parsed, err := parseMessage(message)
 		assert.Nil(t, err, name)
 
@@ -327,9 +327,9 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-func verificationNegative(t *testing.T, cases map[string]interface{}) {
+func verificationNegative(t *testing.T, cases map[string]any) {
 	for name, v := range cases {
-		data := v.(map[string]interface{})
+		data := v.(map[string]any)
 		message, err := InitMessage(
 			data["domain"].(string),
 			data["address"].(string),
@@ -369,9 +369,9 @@ func verificationNegative(t *testing.T, cases map[string]interface{}) {
 	}
 }
 
-func verificationPositive(t *testing.T, cases map[string]interface{}) {
+func verificationPositive(t *testing.T, cases map[string]any) {
 	for name, v := range cases {
-		data := v.(map[string]interface{})
+		data := v.(map[string]any)
 		message, err := InitMessage(
 			data["domain"].(string),
 			data["address"].(string),
@@ -384,13 +384,12 @@ func verificationPositive(t *testing.T, cases map[string]interface{}) {
 		var timestamp *time.Time
 		if val, ok := data["time"]; ok {
 			parsed, err := time.Parse(ISO8601Layout, val.(string))
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			timestamp = &parsed
 		}
 
 		_, err = message.Verify(data["signature"].(string), nil, nil, timestamp)
-
-		assert.Nil(t, err, name)
+		assert.NoError(t, err, name)
 	}
 }
 
@@ -403,17 +402,18 @@ func TestGlobalTestVector(t *testing.T) {
 		"verification-positive": "siwe-js/test/verification_positive.json",
 	} {
 		file, err := os.Open(filename)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		files[test] = file
 		defer file.Close()
 	}
 
 	for test, file := range files {
-		data, _ := ioutil.ReadAll(file)
+		data, err := io.ReadAll(file)
+		assert.NoError(t, err)
 
-		var result map[string]interface{}
-		err := json.Unmarshal([]byte(data), &result)
-		assert.Nil(t, err)
+		var result map[string]any
+		err = json.Unmarshal([]byte(data), &result)
+		assert.NoError(t, err)
 
 		switch test {
 		case "parsing-negative":

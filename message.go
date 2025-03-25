@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/relvacode/iso8601"
 )
 
 type Message struct {
@@ -64,7 +63,10 @@ func (m *Message) GetIssuedAt() string {
 
 func (m *Message) getExpirationTime() *time.Time {
 	if !isEmpty(m.expirationTime) {
-		ret, _ := iso8601.ParseString(*m.expirationTime)
+		ret, err := time.Parse(ISO8601Layout, *m.expirationTime)
+		if err != nil {
+			return nil
+		}
 		return &ret
 	}
 	return nil
@@ -80,7 +82,10 @@ func (m *Message) GetExpirationTime() *string {
 
 func (m *Message) getNotBefore() *time.Time {
 	if !isEmpty(m.notBefore) {
-		ret, _ := iso8601.ParseString(*m.notBefore)
+		ret, err := time.Parse(ISO8601Layout, *m.notBefore)
+		if err != nil {
+			return nil
+		}
 		return &ret
 	}
 	return nil

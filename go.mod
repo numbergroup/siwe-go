@@ -5,7 +5,6 @@ go 1.23.6
 require (
 	github.com/dchest/uniuri v1.2.0
 	github.com/ethereum/go-ethereum v1.15.6
-	github.com/relvacode/iso8601 v1.6.0
 	github.com/stretchr/testify v1.10.0
 )
 

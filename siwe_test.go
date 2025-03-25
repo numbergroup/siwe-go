@@ -13,12 +13,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/relvacode/iso8601"
 	"github.com/stretchr/testify/assert"
 )
 
-const domain = "example.com"
-const addressStr = "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
+const (
+	domain     = "example.com"
+	addressStr = "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
+)
 
 var address = common.HexToAddress(addressStr)
 
@@ -357,7 +358,7 @@ func verificationNegative(t *testing.T, cases map[string]interface{}) {
 
 		var timestamp *time.Time
 		if val, ok := data["time"]; ok {
-			parsed, err := iso8601.ParseString(val.(string))
+			parsed, err := time.Parse(ISO8601Layout, val.(string))
 			assert.Nil(t, err)
 			timestamp = &parsed
 		}
@@ -382,7 +383,7 @@ func verificationPositive(t *testing.T, cases map[string]interface{}) {
 
 		var timestamp *time.Time
 		if val, ok := data["time"]; ok {
-			parsed, err := iso8601.ParseString(val.(string))
+			parsed, err := time.Parse(ISO8601Layout, val.(string))
 			assert.Nil(t, err)
 			timestamp = &parsed
 		}

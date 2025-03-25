@@ -9,19 +9,21 @@ import (
 	"github.com/relvacode/iso8601"
 )
 
+const ISO8601Layout = "2006-01-02T15:04:05Z0700"
+
 func parseTimestamp(fields map[string]interface{}, key string) (*string, error) {
 	var value string
 
 	if val, ok := fields[key]; ok {
-		switch val.(type) {
+		switch parsedTime := val.(type) {
 		case time.Time:
-			value = val.(time.Time).UTC().Format(time.RFC3339)
+			value = parsedTime.UTC().Format(time.RFC3339)
 		case string:
 			_, err := iso8601.ParseString(val.(string))
 			if err != nil {
 				return nil, &InvalidMessage{fmt.Sprintf("Invalid format for field `%s`", key)}
 			}
-			value = val.(string)
+			value = parsedTime
 		default:
 			return nil, &InvalidMessage{fmt.Sprintf("`%s` must be either an ISO8601 formatted string or time.Time", key)}
 		}
@@ -38,19 +40,14 @@ func GenerateNonce() string {
 	return uniuri.NewLen(16)
 }
 
-func isNotEmpty(str *string) bool {
-	return str != nil && len(strings.TrimSpace(*str)) > 0
-}
-
 func isEmpty(str *string) bool {
 	return str == nil || len(strings.TrimSpace(*str)) == 0
 }
 
 func isStringAndNotEmpty(m map[string]interface{}, k string) (*string, bool) {
 	if v, ok := m[k]; ok {
-		switch v.(type) {
+		switch s := v.(type) {
 		case string:
-			s := v.(string)
 			if s != "" {
 				return &s, true
 			}

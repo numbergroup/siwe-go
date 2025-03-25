@@ -1,4 +1,4 @@
-module github.com/spruceid/siwe-go
+module github.com/numbergroup/siwe-go
 
 go 1.23.6
 

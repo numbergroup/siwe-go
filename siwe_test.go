@@ -395,10 +395,10 @@ func verificationPositive(t *testing.T, cases map[string]any) {
 func TestGlobalTestVector(t *testing.T) {
 	files := make(map[string]*os.File, 4)
 	for test, filename := range map[string]string{
-		"parsing-negative":      "siwe-js/test/parsing_negative.json",
-		"parsing-positive":      "siwe-js/test/parsing_positive.json",
-		"verification-negative": "siwe-js/test/verification_negative.json",
-		"verification-positive": "siwe-js/test/verification_positive.json",
+		"parsing-negative":      "testdata/parsing_negative.json",
+		"parsing-positive":      "testdata/parsing_positive.json",
+		"verification-negative": "testdata/verification_negative.json",
+		"verification-positive": "testdata/verification_positive.json",
 	} {
 		file, err := os.Open(filename)
 		assert.NoError(t, err)
